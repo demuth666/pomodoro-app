@@ -51,8 +51,8 @@ export interface Session {
   task_id?: string;
   task?: Task;
   type: 'focus' | 'short_break' | 'long_break';
-  status: 'completed' | 'stopped';
-  duration: number; // in seconds
+  status: 'completed' | 'uncompleted';
+  duration: number;
   started_at: string;
   ended_at: string;
   created_at: string;
@@ -61,7 +61,7 @@ export interface Session {
 export interface CreateSessionRequest {
   task_id?: string;
   type: 'focus' | 'short_break' | 'long_break';
-  status: 'completed' | 'stopped';
+  status: 'completed' | 'uncompleted';
   duration: number;
   started_at: string;
   ended_at: string;

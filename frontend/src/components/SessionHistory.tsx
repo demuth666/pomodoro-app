@@ -109,11 +109,14 @@ export default function SessionHistory({ refreshTrigger = 0 }: SessionHistoryPro
                     <div className="flex flex-col items-end">
                     <div className={`
                         text-xs px-2 py-0.5 rounded-full mb-1
-                        ${session.status === 'completed'
+                        ${(session.task ? session.task.is_completed : session.status === 'completed')
                         ? 'bg-green-900/30 text-green-400 border border-green-900/50'
                         : 'bg-yellow-900/30 text-yellow-400 border border-yellow-900/50'}
                     `}>
-                        {session.status === 'completed' ? 'Completed' : 'Stopped'}
+                        {session.task
+                            ? (session.task.is_completed ? 'Completed' : 'Uncompleted')
+                            : (session.status === 'completed' ? 'Completed' : 'Uncompleted')
+                        }
                     </div>
                     <span className="text-xs text-gray-500 font-mono">{formatDuration(session.duration)}</span>
                     </div>

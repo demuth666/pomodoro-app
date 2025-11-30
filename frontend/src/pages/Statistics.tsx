@@ -127,12 +127,13 @@ export default function Statistics() {
       const distribution: Record<string, number> = {};
       sessions.forEach(session => {
           const task = session.task?.task;
-          distribution[task || 'Deleted Task'] = (distribution[task || 'Deleted Task'] || 0) + 1;
+          const totalTime = session.duration;
+          distribution[task || 'Deleted Task'] = (distribution[task || 'Deleted Task'] || 0) + totalTime;
       });
 
       return Object.entries(distribution).map(([task, value], index) => ({
           name: task,
-          value,
+          value: Math.round(value / 60),
           color: COLORS[index % COLORS.length]
       }));
   }, [sessions]);
@@ -252,7 +253,7 @@ export default function Statistics() {
 
         {/* Distribution Chart */}
         <div className="lg:col-span-1 bg-dark-card rounded-card p-6 border border-white/5">
-          <h3 className="text-lg font-semibold text-white mb-6">Session Types</h3>
+          <h3 className="text-lg font-semibold text-white mb-6">Task Focused</h3>
           <div className="h-[300px] relative">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -272,6 +273,7 @@ export default function Statistics() {
                 <Tooltip
                   contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '8px' }}
                   itemStyle={{ color: '#fff' }}
+                  formatter={(value: number) => [`${value} mins`, 'Duration']}
                 />
               </PieChart>
             </ResponsiveContainer>
