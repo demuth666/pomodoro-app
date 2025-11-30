@@ -1,0 +1,51 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: pomodoro_db
+    restart: always
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=ahmad123
+      - POSTGRES_DB=pomodoro_app
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - pomodoro-network
+
+  backend:
+    build: ./backend
+    container_name: pomodoro_backend
+    restart: always
+    ports:
+      - '8080:8080'
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=ahmad123
+      - DB_NAME=pomodoro_app
+      - DB_PORT=5432
+      - PORT=8080
+    depends_on:
+      - db
+    networks:
+      - pomodoro-network
+
+  frontend:
+    build: ./frontend
+    container_name: pomodoro_frontend
+    restart: always
+    ports:
+      - '80:80'
+    depends_on:
+      - backend
+    networks:
+      - pomodoro-network
+
+volumes:
+  postgres_data:
+
+networks:
+  pomodoro-network:
+    driver: bridge
