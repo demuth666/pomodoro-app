@@ -26,7 +26,7 @@ const TimerContext = createContext<TimerContextType | undefined>(undefined);
 
 export const TimerProvider = ({ children }: { children: ReactNode }) => {
   const { settings } = useSettings();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, refreshProfile } = useAuth();
 
   // State
   const [mode, setMode] = useState<TimerMode>('focus');
@@ -91,6 +91,8 @@ export const TimerProvider = ({ children }: { children: ReactNode }) => {
                 ended_at: now.toISOString(),
             });
             setSessionCompleteTrigger(prev => prev + 1);
+            // Refresh profile to update XP
+            refreshProfile();
         } catch (error) {
             console.error("Failed to record session:", error);
         }

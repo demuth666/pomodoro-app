@@ -5,10 +5,19 @@ export interface ApiResponse<T> {
     data: T;
 }
 
+export interface UserSettings {
+  pomodoro_duration: number;
+  short_break_duration: number;
+  long_break_duration: number;
+  auto_start_breaks: boolean;
+  auto_start_pomodoro: boolean;
+  alarm_sound: string;
+}
+
 export interface User {
   id: string;
   username: string;
-  password: string;
+  password?: string;
   email: string;
   settings?: UserSettings;
   created_at?: string;
@@ -67,18 +76,12 @@ export interface CreateSessionRequest {
   ended_at: string;
 }
 
-export interface UserSettings {
-  pomodoro_duration: number;
-  short_break_duration: number;
-  long_break_duration: number;
-  auto_start_breaks: boolean;
-  auto_start_pomodoro: boolean;
-  alarm_sound: string;
-}
-
 export interface AuthResponse {
   id: string;
   username: string;
   email: string;
   token: string;
+  settings?: UserSettings;
+  xp?: number;
+  level?: number;
 }
