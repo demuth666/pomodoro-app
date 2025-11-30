@@ -26,3 +26,8 @@ type AuthResponse struct {
 	XP        int                 `json:"xp"`
 	Level     int                 `json:"level"`
 }
+
+type UpdateProfileRequest struct {
+	Username string `json:"username" validate:"required,min=3,max=32"`
+	Email    string `json:"email" validate:"required,email"`
+}

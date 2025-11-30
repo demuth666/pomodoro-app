@@ -75,3 +75,10 @@ export interface UserSettings {
   auto_start_pomodoro: boolean;
   alarm_sound: string;
 }
+
+export interface AuthResponse {
+  id: string;
+  username: string;
+  email: string;
+  token: string;
+}

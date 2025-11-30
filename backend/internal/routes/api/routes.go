@@ -18,6 +18,7 @@ func SetupRoutes(app *fiber.App, authHandler *handler.AuthHandler, taskHandler *
 	//Profile routes
 	protected := api.Group("", middleware.AuthMiddleware())
 	protected.Get("/profile", authHandler.GetProfile)
+	protected.Put("/profile", authHandler.UpdateProfile)
 	protected.Put("/settings", authHandler.UpdateSettings)
 
 	//Task routes

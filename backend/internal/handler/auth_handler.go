@@ -74,18 +74,41 @@ func (h *AuthHandler) GetProfile(c *fiber.Ctx) error {
 
 // PUT /api/auth/settings
 func (h *AuthHandler) UpdateSettings(c *fiber.Ctx) error {
-    userID := c.Locals("id").(uuid.UUID)
+	userID := c.Locals("id").(uuid.UUID)
 
-    var req entity.UserSettings
-    if err := c.BodyParser(&req); err != nil {
-        return utils.BadRequestResponse(c, "Invalid body")
-    }
+	var req entity.UserSettings
+	if err := c.BodyParser(&req); err != nil {
+		return utils.BadRequestResponse(c, "Invalid body")
+	}
 
-    err := h.authService.UpdateSettings(userID, req)
+	err := h.authService.UpdateSettings(userID, req)
 
-    if err != nil {
-        return utils.InternalServerErrorResponse(c, "Gagal update setting")
-    }
+	if err != nil {
+		return utils.InternalServerErrorResponse(c, "Gagal update setting")
+	}
 
-    return utils.SuccessResponse(c, "Setting updated", req)
+	return utils.SuccessResponse(c, "Setting updated", req)
+}
+func (h *AuthHandler) UpdateProfile(c *fiber.Ctx) error {
+	userID := c.Locals("id").(uuid.UUID)
+
+	var req dto.UpdateProfileRequest
+	if err := c.BodyParser(&req); err != nil {
+		return utils.BadRequestResponse(c, "Invalid request body")
+	}
+
+	if err := utils.ValidateStruct(req); err != nil {
+		validationErrors := utils.FormatValidationError(err)
+		return utils.ValidationErrorResponse(c, validationErrors)
+	}
+
+	result, err := h.authService.UpdateProfile(userID, req)
+	if err != nil {
+		if err.Error() == "email already taken" {
+			return utils.BadRequestResponse(c, err.Error())
+		}
+		return utils.InternalServerErrorResponse(c, "Failed to update profile")
+	}
+
+	return utils.SuccessResponse(c, "Profile updated successfully", result)
 }

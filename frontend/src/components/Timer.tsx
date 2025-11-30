@@ -1,160 +1,17 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useSettings } from '../context/SettingsContext';
-import { type Task } from '../types';
-import { sessionService } from '../services/session.service';
-import { useAuth } from '../context/AuthContext';
+import { useTimer } from '../context/TimerContext';
 
-type TimerMode = 'focus' | 'shortBreak' | 'longBreak';
-
-interface TimerProps {
-  currentTask: Task | null;
-  onSessionComplete?: () => void;
-}
-
-export default function Timer({ currentTask, onSessionComplete }: TimerProps) {
-  const { settings } = useSettings();
-  const { isAuthenticated } = useAuth();
-  const [mode, setMode] = useState<TimerMode>('focus');
-  const [timeLeft, setTimeLeft] = useState(settings.pomodoro_duration * 60);
-  const [isRunning, setIsRunning] = useState(false);
-  const [focusCount, setFocusCount] = useState(0);
-
-  // Refs to hold latest state values for access inside interval
-  const modeRef = useRef(mode);
-  const currentTaskRef = useRef(currentTask);
-  const focusCountRef = useRef(focusCount);
-  const isAuthenticatedRef = useRef(isAuthenticated);
-  const startTimeRef = useRef<Date | null>(null);
-  const intervalRef = useRef<number | undefined>(undefined);
-  const processingRef = useRef(false);
-
-  // Update refs when state changes
-  useEffect(() => {
-    modeRef.current = mode;
-  }, [mode]);
-
-  useEffect(() => {
-    currentTaskRef.current = currentTask;
-  }, [currentTask]);
-
-  useEffect(() => {
-    focusCountRef.current = focusCount;
-  }, [focusCount]);
-
-  useEffect(() => {
-    isAuthenticatedRef.current = isAuthenticated;
-  }, [isAuthenticated]);
-
-  const getDuration = useCallback((m: TimerMode) => {
-    switch (m) {
-      case 'focus': return settings.pomodoro_duration * 60;
-      case 'shortBreak': return settings.short_break_duration * 60;
-      case 'longBreak': return settings.long_break_duration * 60;
-    }
-  }, [settings]);
-
-  // Reset timer when mode or duration settings change
-  useEffect(() => {
-    setTimeLeft(getDuration(mode));
-    setIsRunning(false);
-    startTimeRef.current = null;
-    processingRef.current = false;
-  }, [mode, getDuration]);
-
-  const handleTimerComplete = async () => {
-      if (processingRef.current) return;
-      processingRef.current = true;
-
-      const currentMode = modeRef.current;
-      const duration = getDuration(currentMode);
-      const now = new Date();
-      const startTime = startTimeRef.current || new Date(now.getTime() - duration * 1000);
-
-      if (isAuthenticatedRef.current) {
-        try {
-            await sessionService.createSession({
-                task_id: currentTaskRef.current?.id,
-                type: currentMode === 'focus' ? 'focus' : currentMode === 'shortBreak' ? 'short_break' : 'long_break',
-                status: 'completed',
-                duration: duration,
-                started_at: startTime.toISOString(),
-                ended_at: now.toISOString(),
-            });
-            if (onSessionComplete) {
-                onSessionComplete();
-            }
-        } catch (error) {
-            console.error("Failed to record session:", error);
-        }
-      }
-
-      // Auto-switch logic
-      if (currentMode === 'focus') {
-        const newCount = focusCountRef.current + 1;
-        setFocusCount(newCount);
-        if (newCount % 4 === 0) {
-          setMode('longBreak');
-        } else {
-          setMode('shortBreak');
-        }
-      } else {
-        // Break is over, back to focus
-        setMode('focus');
-      }
-
-      setIsRunning(false);
-      processingRef.current = false;
-  };
-
-  useEffect(() => {
-    if (isRunning && timeLeft > 0) {
-      if (!startTimeRef.current) {
-          startTimeRef.current = new Date();
-      }
-
-      intervalRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          const newValue = prev - 1;
-          if (newValue <= 0) {
-            if (intervalRef.current) {
-              clearInterval(intervalRef.current);
-            }
-            handleTimerComplete();
-            return 0;
-          }
-          return newValue;
-        });
-      }, 1000);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = undefined;
-      }
-      if (!isRunning) {
-          startTimeRef.current = null;
-      }
-    }
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [isRunning]); // Removed timeLeft dependency to prevent re-creation
-
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (isRunning) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [isRunning]);
+export default function Timer() {
+  const {
+    mode,
+    timeLeft,
+    isRunning,
+    currentTask,
+    setMode,
+    startTimer,
+    pauseTimer,
+    resetTimer,
+    getDuration
+  } = useTimer();
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
@@ -166,12 +23,11 @@ export default function Timer({ currentTask, onSessionComplete }: TimerProps) {
   const strokeDashoffset = circumference - (progress / 100) * circumference;
 
   const handleStart = () => {
-    setIsRunning(!isRunning);
-  };
-
-  const handleReset = () => {
-    setIsRunning(false);
-    setTimeLeft(getDuration(mode));
+    if (isRunning) {
+      pauseTimer();
+    } else {
+      startTimer();
+    }
   };
 
   return (
@@ -179,7 +35,7 @@ export default function Timer({ currentTask, onSessionComplete }: TimerProps) {
       {/* Mode Switcher */}
       <div className="absolute top-4 sm:top-6 left-0 right-0 flex justify-center z-10">
         <div className="bg-dark-gray rounded-full p-1 flex space-x-1">
-          {(['focus', 'shortBreak', 'longBreak'] as TimerMode[]).map((m) => (
+          {(['focus', 'shortBreak', 'longBreak'] as const).map((m) => (
             <button
               key={m}
               onClick={() => setMode(m)}
@@ -256,7 +112,7 @@ export default function Timer({ currentTask, onSessionComplete }: TimerProps) {
         </button>
         {timeLeft < getDuration(mode) && (
           <button
-            onClick={handleReset}
+            onClick={resetTimer}
             className="mt-4 flex items-center space-x-2 px-4 py-2 rounded-lg border border-gray-600 text-gray-400 hover:text-white hover:border-gray-400 hover:bg-white/5 transition-all text-sm"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

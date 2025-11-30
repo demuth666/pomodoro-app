@@ -50,3 +50,15 @@ func (r *SessionRepository) GetUserXP(userID uuid.UUID) (int, error) {
 	}
 	return user.XP, nil
 }
+func (r *SessionRepository) GetLastSession(userID uuid.UUID) (*entity.Session, error) {
+	var session entity.Session
+	err := r.db.Where("user_id = ?", userID).Order("created_at desc").First(&session).Error
+	if err != nil {
+		return nil, err
+	}
+	return &session, nil
+}
+
+func (r *SessionRepository) Update(session *entity.Session) error {
+	return r.db.Save(session).Error
+}

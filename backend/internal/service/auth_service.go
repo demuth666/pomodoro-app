@@ -95,3 +95,40 @@ func (s *AuthService) GetProfile(userID uuid.UUID) (*entity.User, error) {
 func (s *AuthService) UpdateSettings(userID uuid.UUID, settings entity.UserSettings) error {
 	return s.userRepo.UpdateSettings(userID, settings)
 }
+func (s *AuthService) UpdateProfile(userID uuid.UUID, req dto.UpdateProfileRequest) (*dto.AuthResponse, error) {
+	user, err := s.userRepo.FindByID(userID)
+	if err != nil {
+		return nil, errors.New("user not found")
+	}
+
+	// Check if email is being changed and if it's already taken
+	if req.Email != user.Email {
+		existingUser, err := s.userRepo.FindByEmail(req.Email)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err
+		}
+		if existingUser != nil {
+			return nil, errors.New("email already taken")
+		}
+	}
+
+	user.Username = req.Username
+	user.Email = req.Email
+
+	if err := s.userRepo.Update(user); err != nil {
+		return nil, err
+	}
+
+	token, _ := utils.GenerateToken(user.ID)
+
+	return &dto.AuthResponse{
+		Username:  user.Username,
+		Email:     user.Email,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+		Token:     token,
+		Settings:  user.Settings,
+		XP:        user.XP,
+		Level:     user.Level,
+	}, nil
+}

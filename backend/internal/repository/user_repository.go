@@ -40,3 +40,7 @@ func (r *UserRepository) FindByID(userID uuid.UUID) (*entity.User, error) {
 func (r *UserRepository) UpdateSettings(userID uuid.UUID, settings entity.UserSettings) error {
 	return r.db.Model(&entity.User{}).Where("id = ?", userID).Update("settings", settings).Error
 }
+
+func (r *UserRepository) Update(user *entity.User) error {
+	return r.db.Save(user).Error
+}

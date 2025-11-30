@@ -38,6 +38,43 @@ func (s *SessionService) CreateSession(userID uuid.UUID, req dto.CreateSessionRe
 		}
 	}
 
+	lastSession, err := s.sessionRepo.GetLastSession(userID)
+	if err == nil && lastSession != nil {
+		sameTask := false
+		if lastSession.TaskID == nil && taskIDPtr == nil {
+			sameTask = true
+		} else if lastSession.TaskID != nil && taskIDPtr != nil && *lastSession.TaskID == *taskIDPtr {
+			sameTask = true
+		}
+
+		if sameTask &&
+			lastSession.Type == entity.SessionType(req.Type) &&
+			lastSession.Status == entity.SessionStatus(req.Status) &&
+			lastSession.CreatedAt.Year() == time.Now().Year() &&
+			lastSession.CreatedAt.YearDay() == time.Now().YearDay() {
+
+			lastSession.Duration += req.Duration
+			lastSession.EndedAt = endedAt
+
+			if err := s.sessionRepo.Update(lastSession); err != nil {
+				return nil, err
+			}
+
+			if lastSession.Status == entity.SessionStatusCompleted && lastSession.Type == entity.SessionTypeFocus {
+				xpGained := (req.Duration / 60) * 10
+				if xpGained > 0 {
+					currentXP, err := s.sessionRepo.GetUserXP(userID)
+					if err == nil {
+						newXP := currentXP + xpGained
+						_ = s.sessionRepo.UpdateUserXP(userID, newXP)
+					}
+				}
+			}
+
+			return lastSession, nil
+		}
+	}
+
 	session := entity.Session{
 		ID:        uuid.New(),
 		UserID:    userID,

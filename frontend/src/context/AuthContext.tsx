@@ -22,6 +22,7 @@ interface AuthContextType {
   closeLoginModal: () => void;
   openRegisterModal: () => void;
   closeRegisterModal: () => void;
+  updateProfile: (data: { username: string; email: string }) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -114,6 +115,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setShowRegisterModal(false);
   };
 
+  const updateProfile = async (data: { username: string; email: string }) => {
+    try {
+      const response = await authService.updateProfile(data);
+      if (response.success) {
+        // Merge existing user data with updated data to preserve other fields like settings/xp
+        setUser(prev => prev ? { ...prev, ...response.data } : response.data);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Failed to update profile", error);
+      return false;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -126,7 +142,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         openLoginModal,
         closeLoginModal,
         openRegisterModal,
+        openRegisterModal,
         closeRegisterModal,
+        updateProfile,
       }}
     >
       {children}

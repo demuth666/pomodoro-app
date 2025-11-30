@@ -1,12 +1,17 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-
-
 export default function Profile() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, updateProfile } = useAuth();
   const navigate = useNavigate();
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    username: '',
+    email: ''
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const mockStats = {
     level: user?.level || 1,
@@ -20,8 +25,36 @@ export default function Profile() {
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/');
+    } else if (user) {
+      setFormData({
+        username: user.username,
+        email: user.email
+      });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, user]);
+
+  const handleSave = async () => {
+    setIsLoading(true);
+    setError('');
+    const success = await updateProfile(formData);
+    setIsLoading(false);
+    if (success) {
+      setIsEditing(false);
+    } else {
+      setError('Failed to update profile. Email might be taken.');
+    }
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    if (user) {
+      setFormData({
+        username: user.username,
+        email: user.email
+      });
+    }
+    setError('');
+  };
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 max-w-5xl space-y-8">
@@ -61,45 +94,87 @@ export default function Profile() {
             </p>
           </div>
         </div>
-
-        {/* Edit Button */}
-        <button className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5 text-sm font-medium transition-colors">
-          Edit Profile
-        </button>
       </div>
 
       {/* Account Details */}
       <section className="bg-dark-card rounded-card p-6 sm:p-8 border border-white/5">
-        <h2 className="text-lg font-semibold text-white mb-6">Account Details</h2>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-lg font-semibold text-white">Account Details</h2>
+           {!isEditing && (
+          <button
+            onClick={() => setIsEditing(true)}
+            className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5 text-sm font-medium transition-colors"
+          >
+            Edit Profile
+          </button>
+        )}
+          {isEditing && (
+            <div className="flex space-x-2">
+              <button
+                onClick={handleCancel}
+                className="px-3 py-1 text-sm text-gray-400 hover:text-white transition-colors"
+                disabled={isLoading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                className="px-3 py-1 text-sm bg-pomodoro-red text-white rounded hover:bg-red-600 transition-colors disabled:opacity-50"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+            {error}
+          </div>
+        )}
+
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">Full Name</label>
             <input
               type="text"
-              value={user?.username || ''}
-              readOnly
-              className="w-full bg-dark-gray border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none cursor-not-allowed"
+              value={isEditing ? formData.username : (user?.username || '')}
+              onChange={(e) => setFormData({...formData, username: e.target.value})}
+              readOnly={!isEditing}
+              className={`w-full bg-dark-gray border rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none ${
+                isEditing
+                  ? 'border-gray-600 focus:border-pomodoro-red'
+                  : 'border-gray-700 cursor-not-allowed'
+              }`}
             />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">Email Address</label>
             <input
               type="email"
-              value={user?.email || ''}
-              readOnly
-              className="w-full bg-dark-gray border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none cursor-not-allowed"
+              value={isEditing ? formData.email : (user?.email || '')}
+              onChange={(e) => setFormData({...formData, email: e.target.value})}
+              readOnly={!isEditing}
+              className={`w-full bg-dark-gray border rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none ${
+                isEditing
+                  ? 'border-gray-600 focus:border-pomodoro-red'
+                  : 'border-gray-700 cursor-not-allowed'
+              }`}
             />
           </div>
 
-          <div className="pt-4 border-t border-white/5">
-            <button
-              onClick={() => {
-              logout();
-            }}
-            className="w-full py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors">
-              Log Out
-            </button>
-          </div>
+          {!isEditing && (
+            <div className="pt-4 border-t border-white/5">
+              <button
+                onClick={() => {
+                logout();
+              }}
+              className="w-full py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors">
+                Log Out
+              </button>
+            </div>
+          )}
         </div>
       </section>
     </div>
