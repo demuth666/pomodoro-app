@@ -19,6 +19,12 @@ import (
 func main() {
 	db := database.ConnectDB()
 
+	// Migration
+	// err := db.AutoMigrate(&entity.User{}, &entity.Task{}, &entity.Session{})
+	// if err != nil {
+	// 	log.Fatal("Database migration failed:", err)
+	// }
+
 	//Repository
 	userRepo := repository.NewUserRepository(db)
 	taskRepo := repository.NewTaskRepository(db)
