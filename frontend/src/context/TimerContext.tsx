@@ -4,6 +4,7 @@ import { useAuth } from './AuthContext';
 import { sessionService } from '../services/session.service';
 import { type Task } from '../types';
 import { useLocalStorage } from '../hooks/useLocalStorage';
+import alarmSound from '../assets/sounds/alarm.mp3';
 
 type TimerMode = 'focus' | 'shortBreak' | 'longBreak';
 
@@ -69,6 +70,10 @@ export const TimerProvider = ({ children }: { children: ReactNode }) => {
   const handleTimerComplete = async () => {
       if (processingRef.current) return;
       processingRef.current = true;
+
+      // Play sound
+      const audio = new Audio(alarmSound);
+      audio.play().catch(e => console.error("Error playing sound:", e));
 
       const currentMode = modeRef.current;
       const duration = getDuration(currentMode);
