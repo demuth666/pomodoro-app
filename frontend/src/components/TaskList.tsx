@@ -7,12 +7,12 @@ import { useAuth } from '../context/AuthContext';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 
 interface TaskListProps {
-  onTaskSelect: (task: Task) => void;
-  activeTask?: string;
+  onTaskSelect: (task: Task | null) => void;
+  activeTaskId?: string;
   onTaskUpdate?: () => void;
 }
 
-export default function TaskList({ onTaskSelect, activeTask, onTaskUpdate }: TaskListProps) {
+export default function TaskList({ onTaskSelect, activeTaskId, onTaskUpdate }: TaskListProps) {
   const {isAuthenticated} = useAuth();
   const [guestTasks, setGuestTasks] = useLocalStorage<Task[]>("guestTasks", []);
   const [apiTasks, setApiTasks] = useState<Task[]>([]);
@@ -91,6 +91,10 @@ const newTask: Task = {
  }
 
  const deleteTask = async (id: string) => {
+    if (activeTaskId === id) {
+      onTaskSelect(null);
+    }
+
     if (isAuthenticated) {
       setApiTasks(apiTasks.filter(t => t.id !== id));
       try {
@@ -112,6 +116,11 @@ const newTask: Task = {
     if (completedTasks.length === 0) {
         setShowMenu(false);
         return;
+    }
+
+    // Check if active task is being deleted
+    if (activeTaskId && completedTasks.some(t => t.id === activeTaskId)) {
+      onTaskSelect(null);
     }
 
     if (isAuthenticated) {
@@ -229,7 +238,7 @@ const newTask: Task = {
               ref={provided.innerRef}
             >
               {tasks.map((task, index) => {
-                const isActive = activeTask === task.task;
+                const isActive = activeTaskId === task.id;
                 return (
                   <Draggable key={task.id} draggableId={task.id.toString()} index={index}>
                     {(provided) => (
@@ -332,7 +341,6 @@ const newTask: Task = {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   deleteTask(task.id);
-                                  localStorage.removeItem('currentTask');
                                 }}
                                 className="w-full text-left px-4 py-2 text-xs text-red-400 hover:bg-pomodoro-red hover:text-white transition-colors flex items-center space-x-2"
                               >

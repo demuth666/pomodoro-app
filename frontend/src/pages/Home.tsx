@@ -18,7 +18,7 @@ export default function Home() {
         <div className="lg:col-span-1">
           <TaskList
             onTaskSelect={setCurrentTask}
-            activeTask={currentTask?.task}
+            activeTaskId={currentTask?.id}
             onTaskUpdate={() => setRefreshTrigger(n => n + 1)}
           />
         </div>

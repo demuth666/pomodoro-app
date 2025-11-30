@@ -7,6 +7,8 @@ import Settings from './pages/Settings';
 import LoginModal from './components/LoginModal';
 import RegisterModal from './components/RegisterModal';
 
+import NotFound from './pages/NotFound';
+
 function App() {
   return (
     <div className="h-screen bg-dark-bg overflow-hidden">
@@ -21,6 +23,7 @@ function App() {
           <Route path="/statistics" element={<Statistics />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
     </div>
